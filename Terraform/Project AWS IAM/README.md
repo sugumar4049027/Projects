@@ -2,7 +2,7 @@
 main.tf 
 
 With this code IAM USER example_user will be created with access and secret key
-
+```
 provider "aws" {
   region = "us-west-2"
 }
@@ -23,7 +23,7 @@ output "secret_key" {
   value     = aws_iam_access_key.example_access_key.secret
   sensitive = true
 }
-
+```
 
 
 write this in terminal after applying terraform apply so both this file will be created.
