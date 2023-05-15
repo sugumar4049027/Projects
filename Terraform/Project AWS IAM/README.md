@@ -1,5 +1,5 @@
 
-main.tf 
+***main.tf***
 
 With this code IAM USER example_user will be created with access and secret key
 ```
@@ -26,8 +26,8 @@ output "secret_key" {
 ```
 
 
-write this in terminal after applying terraform apply so both this file will be created.
-
+**write this in terminal after applying terraform apply so both this file will be created.**
+```
 terraform output -raw access_key > access_key.txt
 terraform output -raw secret_key > secret_key.txt
-
+```
