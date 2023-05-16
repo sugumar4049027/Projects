@@ -37,6 +37,8 @@ output "secret_key" {
   sensitive = true
 }
 ```
+when we first run init terraform creates terraform.lock.hcl will be created and next created that provider folder with binary file inside
+
 **write this in terminal after applying terraform apply so both this file will be created.**
 ```
 terraform output -raw access_key > access_key.txt
