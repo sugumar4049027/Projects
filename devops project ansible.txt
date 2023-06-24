@@ -1,0 +1,824 @@
+
+
+
+Prepare Ansible Server
+• Setup EC2 instance
+• Setup hostname
+• Create ansadmin user
+• Add user to sudoers file
+• Generate ssh keys
+• Enable password based login
+• Install ansibl
+
+
+
+Creating Ansible instance
+
+1)choose linux instance
+2)t2.micro
+3)Tag : Name:Ansible-server
+4)security group : Existing Devops_security_group
+5)keypair : existing devops_project_key
+
+
+to login with mobaxterm needed
+
+1.private key : devops_project_key
+
+2.public ip: 
+
+3.username : ec2-user //iam username 
+
+
+ssh into ansible ec2 instance
+
+sudo su -
+
+vi /etc/hostname
+
+change host name to 
+
+ansible-server
+
+reboot it
+
+init 6 
+
+press R to restart the session
+
+
+sudo su -
+
+useradd ansadmin
+passwd ansadmin
+
+
+visudo
+
+shift + g to goto the end of the file 
+
+go after 
+%wheel and add
+
+i can execute any command without any password
+ansadmin ALL=(ALL)      NOPASSWD: ALL
+
+
+save esc :wq
+
+to enable password based authentication 
+
+vi /etc/ssh/sshd_config
+
+enable PasswordAuthentication yes
+diable PasswordAuthentication no
+
+ 
+
+:wq
+
+service sshd reload
+
+The command service sshd reload is used to reload the SSH server configuration without restarting the SSH service itself.
+
+When you make changes to the SSH server configuration file (typically located at /etc/ssh/sshd_config),
+ you can use the service sshd reload command to apply those changes without interrupting existing SSH connections.
+
+Reloading the SSH server configuration allows you to implement changes such as modifying SSH port settings, 
+enabling or disabling authentication methods, or updating access control rules. 
+The reload command ensures that the new configuration is applied without disrupting any active SSH sessions or connections.
+
+It is important to note that the sshd service must be installed and running on the system for the service sshd reload command to work. 
+Additionally, the specific command may vary depending on the Linux distribution or operating system you are using.
+
+
+now i open another tab in mobxterm to make ssh connection tologin as ansadmin user
+
+and logging with with just
+
+public ip and asks user name password both are ansadmin
+
+and generate sshkey pair
+
+ssh-keygen
+
+You know, whatever server we wish to access, we need to copy this id_rsa.pub that additional public key
+
+onto target system in target system, which location we should copy in the user's home directory, we
+
+
+sudo su -
+
+amazon-linux-extras install ansible2
+
+
+python --version
+
+ansible --version
+
+Next thing is, we need to prepare our Ansible system to create Docker images.
+
+In this lecture, we are going to add our docker host to Ansible as it manager Node so that our Ansible
+
+control node can able to manage our Docker host.
+
+
+ we are going to write you playbook, that playbook is going to tell to our Docker host
+
+how to create a container for that.
+
+Manage DockerHost with Ansible
+
+
+• On Docker Host
+• Create ansadmin
+• Add ansadmin to sudoers files
+• Enable password based login
+
+• On Ansible Node
+• Add to hosts file
+• Copy ssh keys
+• Test the connection
+
+
+
+also open the docker instance by ssh
+
+sudo su -
+
+
+useradd ansadmin
+passwd ansadmin
+
+
+add this to sudo file
+
+visudo
+
+shift + g to goto the end of the file 
+
+go after 
+%wheel and add
+
+i can execute any command without any password
+ansadmin ALL=(ALL)      NOPASSWD: ALL
+
+
+save esc :wq
+
+
+to check password authentication its already enabled
+
+grep Password /etc/ssh/sshd_config
+
+check
+
+enabled PasswordAuthentication yes
+diabled PasswordAuthentication no
+
+
+switch to ansible instance
+
+This is our Ansible server.
+
+Here we need to add our Docker host as a manager, node manager node nothing but which is managed by ansible 
+
+
+
+vi /etc/ansible/hosts 
+
+this is the default inventory file delete all the text and paste below ip of docker instance inet <this is the ip>
+
+save and :wq	
+
+
+
+goto docker instance get the ip by
+
+ifconfig
+
+Now we need to copy our as admin user keeps onto target in its admin user account.
+
+For that, we should switch on to admin use it.
+
+docker ec2 instance
+
+sudo su - ansadmin
+
+
+ll -la
+
+
+cd .ssh
+
+ll
+//id_rsa
+//id_rsa.pub
+
+We have a simple command to copy this public key to target system.
+
+get the ip of docker system 
+
+ssh into ansible and paste below
+
+ssh-copy-id <privateip>
+
+it will ask ansadmin password
+
+
+goto docker ec2 instance
+
+sudo su - ansadmin
+ll -la
+cd .ssh
+ll
+date
+cat authorized_keys
+
+also we can open the same key in docker instance
+
+cat .ssh/id_rsa.pub
+
+
+we can now check connection from  to ansible by going to docker ec2
+
+in ansible ec2 instance
+
+cd ..
+
+u will be in home dir
+
+ansible all -m ping 
+
+//all means whatever in the inventory system try to connect all of them
+
+ansible all -m command -a uptime 
+
+can check same with docker ec2 instance as wel by 
+
+cd ..
+
+uptime
+
+
+
+
+we are going to see how to integrate Ansible with Jenkins so that Jenkins can able
+
+to copy artifacts onto Ansible system and people can able to create images are it can deploy the containers
+
+and Docker host.
+
+By doing this one, we can delegate the activities like Jenkins can able to do only build activities
+
+and will can able to take it up deployment activities in event.
+
+We have done similar kind of integration some time back while we would like to integrate or Docker host
+
+with the Jenkins raid so similar where we need to integrate Ansible with the Jenkins during integration
+
+of Docker host with the Jenkins, we have created a dedicated user on Docker to host and enable the
+
+password based authentication.
+
+Once that is done, we came back to Jenkins and installed the publisher associate.
+
+After that, we went to configure system and added our Docker host.
+
+Same thing we need to do, but almost all of the steps are in place.
+
+I mean, to say we have created a user over here, enable the password based authentication and publish
+
+to our associates plugin is already available on Jenkins.
+
+One thing what we need to do is we should go to the configure system and add our ansible so that Jenkins
+
+could able to communicate with Ansible successfully by using the credentials of whatever we specify
+
+in the configured systems.
+
+
+
+
+Now goto jenkins and manage jenkins to add ansible
+
+go below and add 
+
+SSH Sever 
+->Name : ansible-server
+->hostname:copy the private ip of ansible system
+if config to get the ip
+->username:ansadmin
+enable->advanced
+enable ->password authentication
+
+give ansadmin password here
+
+passphrase / Password
+ansadmin 
+
+after that click test configuration button
+
+if successfull apply and save
+
+
+Now we are going to create a new Jenkins job where we can build and copy the artifacts onto Ansible
+
+system.
+
+New_item : Copy_Artifact_onto_ansible
+
+copyfrom BuildAndDeployOnContainer
+
+
+
+post build actions
+
+SSH Server
+
+ansible-server
+
+now remove all Exec command and create //opt/docker path in ansible
+
+
+cd /opt
+ll
+sudo mkdir docker
+ll
+sudo chown ansadmin:ansadmin docker
+ll
+
+apply and save
+
+why we create docker folder is to copy the artifact and giving chown ansadmin the access the file
+
+now buildnow
+
+cd docker/
+
+ll
+
+war file is copied
+
+
+Now our Ansible job is creating images by using this Raphael and push it into the Docker hub.
+
+Now you may ask that way we need to push image onto Docker hub.
+
+You can see the problem going forward to copy images onto different systems
+
+
+
+login with ssh ansible ec2 instance to below
+
+cat etc/group
+
+there is no group called docker
+
+Now it's time to create your Docker image with the help of the artifacts, which we have copied on to Ansible.
+
+
+sudo yum install docker -y
+
+
+cat etc/group
+
+docker group will be there now
+
+
+sudo usermod -aG docker ansadmin
+
+adding ansadmin to docker group
+
+id ansadmin
+
+
+service docker status
+
+
+sudo service docker start
+
+ll
+
+Now it's time to build our Docker image to build a Docker images.
+
+
+goto docker ec2 instance
+
+sudo su -
+
+ll
+
+cd /opt/docker/
+
+ll
+
+cat Dockerfile
+
+copy the 3lines
+
+goto ansible ec2 instance ssh
+
+vi Dockerfile
+
+add the 3 lines
+
+:wq
+
+to create docker image from this file 
+
+
+
+
+sudo chmod 777 /var/run/docker.sock
+
+
+docker build -t regapp:v1 .
+
+
+docker images
+
+docker run -t --name regapp-server -p 8081:8080 regapp:v1
+
+
+publicip:8081/webapp
+
+Next
+We will create Ansible Playbook, which can do all these activities through the playbook.
+
+
+
+
+we are copying artifact from jenkins to ansible and pushing image to dockerhub and ansible tells dockerhost that pull image from dockerhub and create a container 
+either it is one docker host or hundred they can pull image from dockerhub
+
+using ansible playbook we are going to create dcker image and push it into dockerhub 
+
+goto ansible ec2 instance ssh
+
+sudo su - ansadmin 
+
+cd /opt
+
+ll
+
+cd docker 
+
+ll
+
+>Dockerfil
+>webapp.war
+
+By using this two, we should create your Docker file.
+
+But for that, we are going to use it and ansible playbook.
+
+
+if we don't give -i ansible will pick default inventory 
+
+default inventory path  etc/ansible/hosts
+
+cat etc/ansible/hosts
+
+it will display docker instance ip address we need to change it to ansible ip
+
+ifconfig 
+
+sudo vi etc/ansible/hosts
+
+
+[dockerhost]
+172.31.12.252
+
+[ansible]
+172.31.1.232
+
+[ansible],[dockerhost] are groups here
+
+
+to work with ansible system we need t copy ansble ssh keys to this system
+
+ansible all -a uptime
+
+one docker system is reachable here not ansible beacuse of the keys
+
+ifconfig
+
+copy ansible ip here etho->inet
+
+ssh-copy-id 172.31.30.109
+
+ansible all -a uptime 
+
+pwd
+
+>/opt/docker
+
+vi regapp.yml
+
+
+---
+- hosts: ansible
+  tasks:
+   - name:create docker image
+     command:build build -t regapp:latest
+     args:
+      chdir: /opt/docker
+
+
+ansible-playbook regapp.yml --check
+
+--check helps whether playbook runs successfuly or not
+
+
+docker images
+
+ansible-playbook regapp.yml
+
+to check all playbooks
+
+
+
+  //become: true //to run as a root
+
+
+
+goto dockerhub create the account login and create repository 
+
+visibility public
+
+login with ec2 ansible ssh
+
+ls
+
+docker images
+
+docker login
+
+give dockerhub credentials here
+
+
+docker images
+
+docker tag <image id> valaxy/regapp:latest
+
+docker images
+
+
+docker push valaxy/regapp:latest
+
+
+now image is pushed into dockerhub
+
+
+We are going to see how we can incorporate these manual steps with our Ansible playbook so that in essence,
+
+we can build tag and commit image on to the Docker Hub from docker hub The Docker host is going to pull this image and create container out of it.
+
+
+
+pwd
+
+>/opt/docker
+
+-Dockerfile
+-regapp.yml
+-webapp.war
+
+
+vi regapp.yml
+
+---
+- hosts: ansible
+  tasks:
+   - name:create docker image
+     command:build build -t regapp:latest
+     args:
+      chdir: /opt/docker
+   - name:create tag to push image onto dockerhub
+     command:docker tag regapp:latest valaxy/regapp:latest
+   - name:push docker image
+     command:docker push valaxy/regapp:latest
+
+
+:wq
+
+
+
+ansible-playbook regapp.yml --check
+
+
+only login as ansadmin to push the code into dockerhub
+
+cat  regapp.yml
+
+cat /etc/ansible/hosts
+
+hostname and group name is same here <ansible>
+
+
+goto jenkins
+
+Copy_Artifact_onto_Ansible
+
+Exec command
+ansible-playbook /opt/docker/regapp.yml
+
+
+also enable poll scm
+
+schedule 
+*****
+
+
+now goto local repo edit the index.jsp of helloworld
+
+vi index.jsp
+
+git commit -am "edited Name"
+
+git push origin master 
+
+
+now jenkins triggered and build new artifact
+
+and image created for this in ansible instance can check with
+
+ansible instance
+
+that will be getting updated in dockerhub 
+
+ we left out with only one step that is creating a container out of this image.
+
+For that, we need to write down unanswerable playbook in that Ansible playbook.
+
+We will tell to our Docker host to that go and connect to the Dakar Hub.
+
+Pull this image and create a container out of it.
+
+
+
+
+
+pwd
+
+/opt/docker
+
+ll
+
+
+
+-Dockerfile
+-regapp.yml
+-webapp.war
+
+
+vi deploy_regapp.yml
+
+
+---
+- hosts: dockerhost
+  tasks:
+  - name:create a container
+     command:docker run -d --name regapp-server -p 8082:8080 valaxy/regapp:latest
+
+:wq
+
+
+
+the above command line what it does is goes to dockerhub and valaxy user and regapp repository and download image and make container named regapp-server
+
+ansible-playbook deploy_regapp.yml -- check 
+
+
+loginto docker instance ec2 ssh
+
+sudo su -
+
+docker images
+
+service docker start 
+
+
+docker images
+
+docker ps -a
+//container id    IMAGE
+//5fvjjdajd76vh   regapp:v1
+
+docker rm -f 5fvjjdajd76vh
+
+
+docker image prune 
+
+docker ps -a
+//REPOSITORY    TAG
+//regapp   v1
+//tomcat   latest
+docker rmi regapp:v1 tomcat:latest
+
+docker images
+
+chomod 777 /var/run/docker.sock 
+
+ansible-playbook deploy_regapp.yml
+
+
+Now what it should do, it should pull the image from the remote repository into said Docker hub and
+
+create a container out of it.
+
+docker images
+
+docker ps -a
+
+pwd
+
+ll
+
+cat deploy_regapp.yml 
+
+vi deploy_regapp.yml
+
+---
+- hosts: dockerhost
+  tasks:
+  - name: stop existing container 
+    command: docker stop regapp-server
+    ignore_errors: yes
+  - name: remove the container 
+    command: docker rm regapp-server
+    ignore_errors: yes
+  - name: remove image 
+    command: docker rmi valaxy/regapp:latest
+    ignore_errors: yes
+  - name: create a container
+    command: docker run -d --name regapp-server -p 8082:8080 valaxy/regapp:latest
+
+ansible-playbook deploy_regapp.yml --check
+
+ansible-playbook deploy_regapp.yml
+
+goto jenkins 
+
+Copy_Artifacts_onto_Ansible
+
+Exec_command
+
+ansible-playbook /opt/docker/regapp.yml;
+sleep 10;
+ansible-playbook /opt/docker/deploy_regapp.yml
+
+:wq
+
+
+
+change file in local repo 
+
+vi index.jsp
+
+git commit -am "changes enter email"
+
+git push origin master
+
+
+
+goto docker ec2 ssh
+
+docker ps -a
+
+docker images
+
+<public ip>:8082/webapp/
+
+
+jenkins
+
+goto BuildAndDeployOnContainer
+
+diable pollscm
+
+
+But if you see the problem, whenever there are some changes, we are terminating the existing container
+
+and creating a new container.
+
+During this time, any user cannot able to access the application.
+
+Another thing is if our container is terminated, how we can come to know that it is not working out,
+
+how we can create new container automatically.
+
+We don't have such kind of mechanisms over here.
+
+That is where container management system comes into the picture.
+
+In next section, we are going to use leverage of the container management system to run our containerised
+
+applications with higher availability and quality tolerance.
+
+So to overcome this problem, we can use Docker native service called Docker swarm or kubernetes.
+
+That is the reason we are not going to deploy our applications as Docker container.
+
+We are going to deploy it as a pod on our Kubernetes environment.

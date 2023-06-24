@@ -1,0 +1,829 @@
+Creating K8s instance
+
+1)choose linux instance
+2)t2.micro
+3)Tag : Name:EKS_Bootstrap_server
+4)security group : Existing Devops_security_group
+5)keypair : existing devops_project_key
+
+
+
+to login with mobaxterm needed
+
+1.private key : devops_project_key
+
+2.public ip: 
+
+3.username : ec2-user //iam username 
+
+
+ssh into ansible ec2 instance
+
+sudo su -
+
+aws --version 
+
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+
+sudo ./aws/install
+
+aws --version
+
+exit 
+
+sudo su -
+
+
+aws --version
+
+Determine whether you already have kubectl installed on your device.
+
+kubectl version --short --client
+
+Download the kubectl binary for your cluster's Kubernetes version from Amazon S3 using the command for your device's hardware platform. 
+The first link for each version is for amd64 and the second link is for arm64.
+
+Kubernetes 1.27
+
+
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.1/2023-04-19/bin/linux/amd64/kubectl
+
+chmod +x kubectl
+
+mv kubectl /usr/local/bin
+
+echo $PATH
+
+why we move to the path is 
+whenever we execute any comment,
+
+it is going to validate in this location as well. /usr/local/bin
+
+
+kubectl version 
+
+
+# for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
+ARCH=amd64
+PLATFORM=$(uname -s)_$ARCH
+
+curl -sLO "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+
+# (Optional) Verify checksum
+curl -sL "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+
+sudo mv /tmp/eksctl /usr/local/bin
+
+
+eksctl version
+
+
+now goto IAM and create Role with EC2 full access and cloudformationfullaccess and iamfullaccess
+
+Rolename:eksctl_role
+
+RoleDescription:default
+
+save
+
+goto k8 instance add the role created
+
+eksctl create cluster --name valaxy-cluster \
+--region ap-east-1 \
+--node-type t2.micro \
+
+
+
+we can goto cloudformation the stack will be created
+
+cat /root/.kube/config
+
+
+kubectl get nodes
+
+kubectl get all
+
+kubectl run webapp --image=httpd
+//pod/webapp created
+
+
+kube get po
+
+
+Deploying Nginx pods on Kubernetes
+Deploying Nginx Container
+
+kubectl create deployment  demo-nginx --image=nginx --replicas=2 --port=80 --replicas=2
+# kubectl deployment regapp --image=valaxy/regapp --replicas=2 --port=8080
+kubectl get deployment
+kubectl get deploy
+kubectlget replicaset
+kubectl get all
+kubectl get pod
+Expose the deployment as service. This will create an ELB in front of those 2 containers and allow us to publicly access them.
+
+kubectl expose deployment demo-nginx --port=80 --type=LoadBalancer
+kubectl get all
+# kubectl expose deployment regapp --port=8080 --type=LoadBalancer
+kubectl get services -o wide
+
+
+So whenever we create a deployment in the back end, it is going to initiate the replicas it under this
+
+replicas, it is going to create a pod
+
+But in our case, we help mentioned two replicas.
+
+It is going to create two pods to access this pods.
+
+to access this pods We need to create a service by using the expo's command so it creates a service in the backend and through
+
+the service we can access.
+
+And this service type is a load balancer.
+
+That is the reason we could able to see a load balancer on aws cloud.
+
+But in the real world, it is not right way to deploy.
+
+That is where we use manifest files.
+
+
+In previous lecture, we have deployed our application by using the kubectl command line in this lecture,
+
+I'm just going to show you how we can create a pod on the service by using the Manifest files for
+
+that let me delete the existing configurations by using kubectl delete deployment so we can use the deployment and.
+
+
+kubectl get all
+
+//NAME
+deployment.apps/demo-nginx
+
+
+kubectl delete deployment demo-nginx
+
+deleting load balancer
+
+kubectl delete service/demo-nginx
+
+kubectl get all
+
+vi pod.yml
+
+apiVersion: v1
+kind: Pod
+metadata:
+   name:demo-pod
+#   label:
+#     app: demo-app
+
+spec:
+   containers:
+    - name: demo-nginx
+      image: nginx
+      ports: 
+       - name: demo-nginx
+         containerPort: 80
+
+:wq
+
+we created pod to expose that we need service 
+
+
+
+vi service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-service
+spec:
+  ports:
+    - name: nginx-port
+      port: 80
+      targetPort: 80
+  
+  type:LoadBalancer
+
+
+cat service.yml
+
+
+just comment label for a while
+to create a pod with the help of manifest
+
+kubectl apply -f pod.yml 
+
+kubectl apply -f service.yml 
+
+kubectl get all
+
+ll
+
+this code doesn't work because it needs label there can be thousand of pods running in a service so selector label and label need so it can identify the pod
+and we can access application in the web
+
+vi service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-service
+spec:
+  ports:
+    - name: nginx-port
+      port: 80
+      targetPort: 80
+  selector:
+      app: demo-app
+  
+  type:LoadBalancer
+
+vi pod.yml
+
+apiVersion: v1
+kind: Pod
+metadata:
+   name:demo-pod
+   label:
+     app: demo-app
+
+spec:
+   containers:
+    - name: demo-nginx
+      image: nginx
+      ports: 
+       - name: demo-nginx
+         containerPort: 80
+
+:wq
+
+
+kubectl apply -f pod.yml 
+
+kubectl apply -f service.yml 
+
+command will update the existing configuration
+
+kubectl get pod -o wid
+
+
+lets see if the pod deleted another pod will be created why we think that because in container that doesn't
+main reason for using k8s is failure happens another pod will be launched so
+
+kubectl get all
+
+kubectl delete pod demo-pod
+
+kubectl get po
+
+kubectl delete service/demo-service
+
+kubectl get all
+//cluster is clean now
+
+
+
+Now I'm going to show you the deployment file, which I have written for our registry app and we have
+
+the registry app over here.
+
+We are going to pull this registry up and create pod out of it.
+
+But while creating this part, we will make sure that in case something goes wrong with the pod, it
+
+is going to recreate again and again.
+
+
+We are going to create pods and services and we'll see how we can access our registry app from the
+
+kubernetes to make use of these files.
+
+
+
+kubectl get all
+
+
+
+
+vi regapp-deployment.yml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valaxy-regapp
+  labels:
+     app: regapp
+
+spec:
+  replicas: 3
+  selector:
+     matchLabels:
+       app: regapp
+
+  template:
+     metadata:
+       labels:
+        app: regapp
+     spec:
+       containers:
+       - name: regapp
+         image: valaxy/regapp
+         imagePullPolicy: Always
+         ports:
+         - containerPort: 8080
+  strategy:
+     type:RollingUpdate
+     rollingUpdate:
+       maxSurge: 1
+       maxUnavailable: 1
+
+
+cat regapp-deployment.yml
+
+
+
+
+vi regapp-service.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: valaxy-service
+  labels:
+     app: regapp
+
+spec:
+  selector:
+    app: regapp
+  ports:
+     port: 8080
+     targetPort: 8080
+  type: LoadBalancer
+
+ls
+aws awscli pod.yml service.yml regapp-service.yml regapp-seployment.yml
+
+kubectl apply -f regapp-deployment.yml
+
+kubectl get all
+
+kubectl get pod -0 wide
+
+it will tell each pod which workload its running
+
+cat regapp-service.yml
+
+
+kubectl apply -f regapp-service.yml
+
+
+kubectl get all
+
+kubectl describe service/valaxy-service
+
+kubectl get po
+///NAME
+///valaxy-regapp-122nsndsjfn-fsfsj
+other than this another 2 will be running
+
+
+kubectl delete pod valaxy-regapp-122nsndsjfn-fsfsj
+
+even after deletion 3 pods will be running because min pods is 3
+
+First, I need to integrate this one with the Ansible because I cannot run.
+
+This kubectl will command manually.
+
+I will tell to my Ansible that OK, run kubectl will command whenever we want to do that new deployment.
+
+Integrate Kubernetes with Ansible
+
+
+• On Bootstrap server
+
+• Create ansadmin
+• Add ansadmin to sudoers files
+• Enable password based login
+
+
+• On Ansible Node
+
+• Add to hosts file
+• Copy ssh keys
+• Test the connection
+
+
+
+SSH into Bootstrap image
+
+useradd ansadmin
+
+passwd ansadmin
+
+visudo
+
+next to the root add
+
+i can execute any command without any password
+ansadmin ALL=(ALL)      NOPASSWD: ALL
+
+save esc :wq
+
+to enable password based authentication 
+
+vi /etc/ssh/sshd_config
+
+enable PasswordAuthentication yes
+diable PasswordAuthentication no
+
+ 
+
+:wq
+
+service sshd reload
+
+now, I need to add bootstrap image to the hostfile
+
+In this case, I'm going to create inventory file here itself.
+
+That is vi hosts.
+
+
+
+SSH into ansible 
+
+now after adding that we can login with ansadmin user
+
+sudo su - ansadmin
+
+cd /opt/docker
+
+
+ll
+>deploy_regapp.yml
+>Dockerfile
+>webapp.war
+>regapp.yml
+
+mv regapp.yml create_image_regapp.yml
+
+cat create_image_regapp.yml
+
+mv deploy_regapp.yml docker_deployment.yml
+
+ll
+
+vi hosts
+
+
+localhost
+[kubernetes]
+
+<paste it here>
+
+[ansible]
+
+<paste it here the private ip>
+
+
+SSH into k8s intance
+
+ifconfig -a
+
+first inet is private ip copy that
+
+
+ssh-copy-id <private ip of bootstrap image>
+
+
+ansible -i hosts all -a uptime
+
+
+Now I would like to execute our deployment and service files by using Ansible.
+
+
+
+ssh into ansibe ec2
+
+
+pwd
+
+/opt/docker
+
+
+Now we are going to create year deployment and service file over here.
+
+
+vi kube_deploy.yml 
+
+
+---
+- hosts: kubernetes
+#  become: true
+  user: root
+
+  tasks:
+  - name: deploy regapp on kubernetes
+    command: kubectl apply -f regapp-deployment.yml
+
+vi kube_service.yml 
+
+---
+- hosts: kubernetes
+#  become: true
+  user: root
+
+  tasks:
+  - name: deploy regapp on kubernetes
+    command: kubectl apply -f regapp-service.yml
+
+Now we should execute this Ansible playbooks so that our target investments should create the pods
+
+and services before creating it.Let me delete these services running in bootstrap ec2 instance
+
+
+ssh into k8 ec2 instance
+
+kubectl delete -f regapp-service.yml
+
+kubectl delete -f regapp-deployment.yml
+
+kubectl get all
+
+
+ssh into ansibe ec2
+
+ssh-copy-id root@bootstrap-private-ip
+
+copy the ssh key into root user
+
+
+ssh into bootstrap ec2
+
+passwd root
+
+ssh into ansibe ec2
+
+ansible-playbook -i /opt/docker/hosts kube_deploy.yml
+ansible-playbook -i /opt/docker/hosts kube_service.yml
+
+
+ssh into bootstrap ec2
+
+kubectl get pods
+
+kubectl get all
+>we can see load balancer also getting created here
+
+In the next lecture, we are going to see how we can execute this playbooks by using the Jenkin server.
+
+
+
+
+
+Login to jenkins
+
+MAnage jenkins
+
+item
+
+Deploy_On_Kubernetes
+
+Free style project
+
+Description:Deploy on Kubernetes
+
+Post build actions: send build artifact over ssh 
+
+name: ansible_server
+
+Exec command
+
+ssh ansible ec2
+
+sudo su - ansadmin
+
+cd /opt/docker/
+
+ll
+
+ansible-playbook -i /opt/docker/hosts /opt/docker/hosts/kube_deploy.yml;
+ansible-playbook -i /opt/docker/hosts /opt/docker/hosts/kube_service.yml;
+
+apply and save
+
+
+ssh into bootstrap
+
+sudo su -
+
+kubectl get all
+
+kubectl delete deployment.apps/valaxy-regapp
+
+kubectl delete service/valaxy-service
+
+kubectl get all
+
+
+press buildnow in jenkins
+
+
+
+ansible-playbook -i /opt/docker/hosts /opt/docker/hosts/kube_deploy.yml;
+ansible-playbook -i /opt/docker/hosts /opt/docker/hosts/kube_service.yml;
+
+go and remove second line and edit kube_deployfile by
+
+
+vi kube_deploy.yml 
+
+
+---
+- hosts: kubernetes
+#  become: true
+  user: root
+
+  tasks:
+  - name: deploy regapp on kubernetes
+    command: kubectl apply -f regapp-deployment.yml
+  - name: deploy regapp on kubernetes
+    command: kubectl apply -f regapp-service.yml
+
+
+
+Goto jenkins rename Deploy_On_Kubernetes to Regapp_CD_Jobs
+
+
+ssh into ansible
+
+ll
+
+cat create_image_regapp.yml
+
+vi create_image_regapp.yml
+
+---
+- hosts: ansible
+
+  tasks:
+  - name: create docker image
+    command: docker build -t regapp:latest
+    args:
+     chdir: /opt/docker
+
+  - name: create tag to push image onto dockerhub
+    command: docker tag regapp:latest valaxy/regapp:latest
+ 
+  - name: push docker image
+    command: docker push valaxy/regapp:latest
+
+
+So it should pull the code from here(github repo) and the building, the Jenkins and the Run the  Ansible playbook in
+
+our Ansible server that is create image register app because it is going to create the image.
+
+You can see here this is creating image, adding the tags and pushing that image under Docker hub.
+
+Anyway, it is going to create the latest image with the help of a webapp.war and Docker file and it commits in hub.docker.com inside registry
+
+
+creating new item
+
+RegApp_CI_Job
+
+copy from Copy_Artifact_onto_Ansible
+
+Description
+
+Build code with maven and create an image on ansibleand push it onto dockerhub
+
+
+Source code management
+
+git
+
+Repo URL
+
+https://github.com/yankils/hello-world.git
+
+Branch 
+
+master branch
+
+build trigger
+
+build whenever a SNAPSHOT dependency is built
+
+poll scm
+*****
+
+build
+
+root POM
+pom.xml
+
+goals and options
+
+clean install
+
+
+
+send build artifact over ssh
+
+Name 
+ansible-server
+
+
+source files
+webapp/target/*.war/
+
+remove prefix
+webapp/target
+
+remote directory
+//opt/docker
+
+Exec command
+
+ansible-playbook /opt/docker/create_image_regapp.yml;
+
+
+
+change the code in local repo
+
+vi index.jsp
+
+change something
+
+git status
+git commit -am "changes mobile no"
+
+git push origin master
+
+disable other than
+
+RegApp_CI_Job
+
+RegApp_CD_Job
+
+this two all poll scm
+
+
+now we have to integrate ci and CD so whenever ci executed it should take latest image from hub and deploy it
+
+
+
+Goto configure ->
+RegApp_CI_Job
+
+Buildsetting -> add post build action ->build ither project
+
+
+Post steps-> Projects to build: RegApp_CD_Job
+
+apply and save
+
+
+goto local repo and do changes and commit the code
+
+there will be no changes we have to do 
+
+ssh into ansible ec2 instance
+
+vi kube_deploy.yml
+
+---
+- hosts: kubernetes
+#  become: ture
+  user: root
+
+  tasks:
+    - name: deploy regapp on kubernetes
+      command: kubectl apply -f regapp-deployment.yml
+
+    - name: create service for regapp
+      command: kubectl apply -f regapp-servie.yml
+   
+    - name: update deployment with new pods if image updated in docker hub
+      command: kubectl rollout restart deployment.apps/valaxy-regapp
+
+
+get the deployment name from by ssh into the bootstrap ec2 instance
+the name is
+
+deployment.apps/valaxy-regapp
+
+
+
+

@@ -1,0 +1,18 @@
+So we are changing the code on our workstation and this changes we are committing onto our GitHub repository.
+
+From there, our Jenkins is pulling the code and building with the help of Mavin.
+
+And it is generating a war file and we called it as artifacts, and we're pushing it onto to the Ansible
+
+server.At the same time, it is also executing Ansible Playbook, which can create an image with the artifacts
+
+and committed into the repository.
+
+And also, we have created one more job that is CD job that is initiated by the Jenkins, and it is
+going to initial  Ansible playbook.
+
+This Ansible playbook execute deployment and service files on Kubernetes cluster.
+
+However, we are trying to integrate the CI and CD job so that whenever we do some changes over
+
+here, it should be available under Kubernetes cluster.

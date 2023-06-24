@@ -1,0 +1,1187 @@
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io-2023.key
+
+amazon-linux-extras install epel
+amazon-linux-extras install java-openjdk11
+
+https://pkg.jenkins.io/redhat/
+
+
+
+
+Installing maven in the ec2 instance
+
+
+https://maven.apache.org/install.html
+
+pwd
+
+cd /opt
+ll
+wget https://dlcdn.apache.org/maven/maven-3/3.9.2/binaries/apache-maven-3.9.2-bin.tar.gz
+ll
+
+->to extract
+tar -xvzf {copy the filename and paste here}
+
+ll
+
+mv {to change file namecopy the name displayed above and paste it here} {new name}
+
+./mvn -v
+
+cd ~
+
+pwd
+
+ll -a
+->we can see the path go to .bash_profile to edit the environment variable 
+
+vi .bash_profile
+
+
+->maven file path
+M2_HOME=/opt/maven
+->maven bin path
+M2=/opt/maven/bin
+JAVA_HOME=/usr/lib/jvm/{jdk filename}
+
+
+open another terminal to check
+to find java path
+find / -name jvm
+cd /usr/lib/jvm
+ll
+
+another way to find jdk path
+
+find /-name java-11*
+ll
+/usr/lib/jvm/{jdk filename}
+
+
+in the PATH file add
+:$JAVA_HOME:$M2_HOME:$M2
+
+
+save the file by esc :wq
+
+to check the file
+echo $PATH
+it will only update when it relogin or
+source .bash_profile
+echo $PATH
+
+mvn -v
+
+
+->now install install maven integration plugin in jenkins console
+
+
+
+goto global tool configuration 
+
+
+Add jdk
+remove install automatically
+
+Name 
+java-11
+JAVA_HOME
+/usr/lib/jvm/{jdk filename}
+
+
+Add Maven
+Name
+maven-3.9.2
+MAVEN_HOME
+/opt/maven
+
+
+Apply->save
+
+
+
+
+
+New Item
+
+Maven project
+
+
+Filename:
+FirstMavenProject
+Description
+FirstMavenProject
+
+
+under SCM
+URL
+add my helloworld repo url
+enable build trigger if not already enabled
+Goals and options
+clean install
+
+apply and save
+build now
+
+now that github repo cloned also downloads all the dependencies and 
+
+
+cd /var/lib/jenkins
+
+ll
+
+cd workspace/
+->here what are all the build we executed will be here
+
+ll
+
+cd webapp/
+
+
+cd target/
+
+under target the artifact will be created
+
+
+
+
+
+
+Tomcatserver
+Amazon linux
+ec2-user
+Tag
+Name
+Tomcatserver
+
+Name of the SG
+Devops_security_group
+ssh tcp 22
+custom tcp tcp 8080
+
+key devops project key
+
+
+
+amazon-linux-extras install epel
+amazon-linux-extras install java-openjdk11
+
+
+cd /opt
+ll
+
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.76/bin/apache-tomcat-9.0.76.tar.gz
+
+ll
+
+tar -xvzf {copy the filename and paste here}
+
+mv {to change file namecopy the name displayed above and paste it here} {tomcat}
+
+cd tomcat/
+cd bin
+ll
+to start tomcat
+./startup.sh
+cd ../..
+pwd
+ll
+find / -name context.xml
+
+vi {the path comes from find}
+open and commant out <!-- --> valveline
+do that for twolines host-manager and manager
+ll
+cd bin
+ll
+./shutdown.sh
+
+./startup.sh
+
+cd ..
+ll
+cd conf/
+ll
+vi tomcat-users.xml
+
+copy this in the file
+
+ <role rolename="manager-gui"/>
+ <role rolename="manager-script"/>
+ <role rolename="manager-jmx"/>
+ <role rolename="manager-status"/>
+ <user username="admin" password="admin" roles="manager-gui, manager-script, manager-jmx, manager-status"/>
+ <user username="deployer" password="deployer" roles="manager-script"/>
+ <user username="tomcat" password="s3cret" roles="manager-gui"/>
+
+ll
+ln -s /opt/tomcat/bin/startup.sh /usr/local/bin/tomcatup
+what is happening here is instead everytime specifying the path we can use tomcatup to start the server
+echo $PATH
+
+ln -s /opt/tomcat/bin/shutdown.sh /usr/local/bin/tomcatdown
+
+
+ip:8080/manager.html/html
+
+
+
+
+
+
+
+First goto settings and change the default password for jenkins and again login with that password 
+manage jenkins - >global tool configuration -> install container plugin ->Deploy to container
+this the plugin used to deploy artifact jenkins to maven
+
+
+manage jenkins - >global tool configuration -> global credentials and define all he below
+deployer username and password and desc
+But if one system want to access another system in such cases, we need to use the manager script rules
+
+and we are going to use the deployer user with the deployer plugin.
+
+
+
+New Item
+
+->
+Name -> buildAndDeployJob -> Maven Project
+Desc:
+Build code with the help of maven and deploy it on the tomcat server
+
+git
+git url for helloworld
+branch
+main or master
+Goals and options 
+clean install
+
+
+Builds settings
+
+Deploy war/ear to a container
+->webapp/target/webapp.war
+or
+this path
+**/*.war
+
+
+to find the path in jenkins
+we need path for our workspace
+cd /var/lib/jenkins/workspace/
+cd FirstMavenProject
+ll
+cd webapp/target/
+
+
+
+next add container
+tomcat 8
+and credentials
+tomact uRL
+
+apply and save
+
+now we can go and see the webserver in tomcat see the webpage if we click that webserver
+
+
+
+
+clone the repo in the local repo
+and cd into webapp and edit the jsp file and the any html login form from w3school
+
+cd webapp/
+ll
+vi index.jsp
+
+git status
+
+
+
+git add .
+
+
+git status
+
+
+
+git commit -m "updated index.jsp file"
+//commiting in local repo
+
+
+git push origin master or main(branch name) 
+//commit in remote repo
+
+
+
+after creating personal access token and doing login with git and push the code do the build in jenkins the web page will now change
+
+
+
+if you want to edit existing build then goto configuration
+
+
+Jenkins ->build periodically , Poll SCM
+difference is irrespective of change or not build periodically will execute but Poll SCM will check whether there is change or not and execute
+
+
+Poll SCM
+
+schedule
+*****
+
+
+*Minute
+*Hour
+*DOM-day of the month
+*Month
+*DOW-day of the week
+
+
+Apply and save
+
+
+just change one line or add <br> in index.jsp file
+
+git add .
+
+git commit -m "added br"
+
+git push origin master or main
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Now Instead of container we will deploy on docker container instead of tomcat server 
+
+• Create a dockeradmin user
+• Install “Publish Over SSH” plugin
+• Add Dockerhost to Jenkins “configure systems”
+
+• Setup a Linux EC2 Instance
+• Install docker 
+• Start docker services
+• Basic docker commands
+
+
+
+
+Creating Docker instance
+
+1)choose linux instance
+2)t2.micro
+3)Tag : Name:Docker-host
+4)security group : Existing Devops_security_group
+5)keypair : existing devops_project_key
+
+
+ssh into instance using mobaxterm
+
+can login with pem key username and public ip
+
+to be root user
+sudo su -
+
+
+yum install docker -y
+
+service docker status 
+
+docker images
+
+docker ps
+//tells how many containers are running
+
+
+docker ps -a
+//tells how many containers we are having
+
+From here on how to create docker container
+
+we can create docker container by running docker run on docker image
+
+Now how do we get this Docker image Docker image we can get it into this faster thing is from the Dockerhub.
+
+This is quite common way to get your Docker image.
+
+So Docker how big the public repository, which contains the Docker images, we can use the command docker pull
+
+
+docker pull tomcat
+
+
+ssh into docker instance
+
+//to change the name of the docker instance in ssh
+
+vi /etc/hostname/
+
+and u will be inside the file and change the name into
+
+dockerhost
+
+esc + :wq to save 
+
+
+init 6 
+
+is the command to reboot after changing the filename
+
+it will take sometime to reboot after press R
+
+
+
+service docker status
+//to see the current docker status
+
+
+service docker start
+// to start the docker service
+
+docker pull tomcat
+//to pull tomcat docker
+
+
+docker images
+//to see current docker image
+
+to see container there before executing below command
+
+docker ps -a
+
+
+now to create container out of this image run
+
+docker run -d --name tomcat-container -p 8081:8080 tomcat
+
+-d = runs on detached mode
+--name = name of the container
+-p = port
+8081 = externally exposing it to this port
+8080 = internally running using this port
+tomcat = image name
+
+
+docker ps -a
+
+it won't open in public ip:8081
+
+so add security group inbound rule custom tcp :8081-9000, 0.0.0.0
+
+
+to login into this container we are logging with docker containe with the help of bin/bash
+docker exec -it tomcat-container /bin/bash
+
+ls
+
+cd webapps.dist
+
+ls
+
+cd ..	
+
+ls
+
+cd webapps.dist
+
+ls
+
+cp -R *../webapps/
+
+we are copying everything onto web apps directory
+
+cd ../webapps 
+
+ls
+
+now goto to docker container instance
+
+public ip:8081
+
+
+to stop the tomcat container
+
+docker stop tomcat container
+
+docker ps -a
+//show the container also stopped one
+
+docker ps 
+//it will not show the container because container is stopped
+
+
+//running a new container
+docker run -d --name tomcat2 -p 8082:8080 tomcat:latest
+
+public ip:8082
+
+now if we go here we won't see the tomcat app because the docker image is different here
+
+Let me explain it once again, we have updated the changes on the only Docker container whenever we
+
+create a new container with the the image, whatever changes we have done on the container, it won't
+
+get depicted in the image.
+
+That's the reason whenever we launch a new image, it will come up with the same error.
+
+Now how we can troubleshoot it, it is quite simple.
+
+We are going to create your Docker file.
+
+We will pull the Tomcat image and we will do the customization like copying the file from the Baptista
+
+to WebApp so that the content will be accessible under web apps directly so that we will create Docker
+
+images so that the changes will be captured over here.
+
+From here, if we launch Tomcat container, we don't see the port not for add up.
+
+
+Write Your 1st Docker File 
+• FROM: To pull the base image
+• RUN: To execute commands
+• CMD: To provide defaults for an executing container
+• ENTRYPOINT: To configure a container that will run as an executable
+• WORKDIR: To sets the working directory
+• COPY: To copy a directory from your local machine to the docker container
+• ADD: To copy files and folders from your local machine to docker containers
+• EXPOSE: Informs Docker that the container listens on the specified network ports at runtime
+• ENV: To set environment variables
+
+
+
+Install tomcat on Centos 
+• Pull centos from dockerhub
+• Install java 
+• Create /opt/tomcat directory 
+• Change work directory to /opt/tomcat 
+• Download tomcat packages 
+• Extract tar.gz file 
+• Rename to tomcat directory 
+• Tell to docker that it runs on port 8080
+• Start tomcat services 
+Dockerfile
+- FROM
+- RUN
+- RUN
+- WORKDIR
+- ADD /RUN
+- RUN
+- RUN
+- EXPOSE
+- CMD
+
+
+
+
+
+Creating dockerfile
+
+vi Dockerfile
+
+//dockerfile is the filename
+write this inside the file remove the //
+
+
+FROM centos:latest
+RUN yum install java -y
+RUN mkdir /opt/tomcat
+//creaing dir
+WORKDIR /opt/tomcat
+//going inside the directory
+ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.76/bin/apache-tomcat-9.0.76.tar.gz .
+//download the file
+RUN tar -xvzf apache-tomcat-9.0.76.tar.gz
+//extract the file
+RUN mv apache-tomcat-9.0.76.tar.gz/* /opt/tomcat
+EXPOSE 8080
+//to start a tomcat using cmd and run command
+CMD["/opt/tomcat/bin/catalina.sh" , "run"]
+
+
+
+save and close the file 
+esc + :wq
+
+now creating image out the docker file using the command
+
+docker build -t mytomcat .
+
+
+docker run -d --name mytomcat-server -p 8083:8080 mytomcat
+//building container from the image using the above command 
+//8083:8080 means 8080 usually port runs in tomcat we are running with 8083
+
+docker ps -a
+
+//stopping tomcat container
+
+docker stop mytomcat-server
+
+
+rm Dockerfile
+//removing Dockerfile
+
+
+we can directly pull instead of dockerfilefrom dockerhub the dockerfile using docker pull but it doesn't open in the port for that
+for that we need to move the file into webapp.dist and run image from there and create container
+
+
+now we are creating new docker file 
+
+
+vi Docker
+
+FROM tomcat:latest
+RUN cp -R /usr/local/tomcat/webapps.dist/* /usr/local/tomcat/webapps
+
+
+save and close the file 
+esc + :wq
+
+//building docker file from this
+docker build -t demotomcat .
+
+-t means tag
+. means path
+demotomcat is the name
+
+
+
+docker images
+
+
+creating container from this image
+docker run -d --name demotomcat-container -p 8085:8080 demotomcat
+ 
+
+
+
+//to check users in the system 
+cat etc/passwd
+
+//to check groups in the system 
+cat etc/group
+
+
+
+Integrate Docker with Jenkins
+• Create a dockeradmin user
+• Install “Publish Over SSH” plugin
+//second step is for copying artifact from jenkins to docker host
+• Add Dockerhost to Jenkins “configure systems
+// so we can be able to communicate docker host to jenkins
+
+
+we need to create user docker admin and add him in the group then only he will be able to perform actions
+
+
+useradd dockeradmin
+
+passwd dockeradmin
+
+
+to check user belongs which done by default
+id dockeradmin
+
+tomodify the user group 
+usermod -aG docker dockeradmin
+
+
+to login with this dockeradmin in another tab using password
+
+vi /etc/ssh/sshd_config
+
+/Password 
+
+search using above command and remove # from first passwordauthentication save and back
+
+and reload using 
+
+service sshd reload
+
+there is another way to login as well using ssh keys comes after
+
+
+Install
+
+public over ssh 
+plugin in jenkins
+
+
+Manage jenkins >configure system
+
+SSH server
+
+Name : dockerhost
+
+Hostname : private ip
+//private ip will work because both ip in same subnet
+
+username: dockeradmin
+
+
+goto docker ec2
+
+to create ssh key 
+
+sudo su - dockeradmin
+
+ssh-keygen
+
+
+enable password based authentication and enter
+
+
+test configuration
+
+
+Configuration
+
+Enter an item name 
+BuildAndDeployOnContainer
+
+
+choose if you want to create new item form existing copy from 
+BuildAndDeployJob
+
+
+remove an select new post build option
+
+send build artifact over ssh
+
+Name :dockerhost
+
+//this is were artifact created put that path in source file
+sourcefile : webapp/target/*.war
+
+/remove prefix
+webapp/target
+
+//were to copy
+
+
+
+Now it's time to create your Docker image along with our artifacts.
+
+I meant to say war file so that whenever we launch our new container, it will come up with an application
+
+We need to copy these artifacts where we have our Docker file.
+
+Of course, we have created our own under root directory.
+
+Instead of that one.
+
+What we can do, we can maintain maintainers operated directly to keep our Docker under artifacts so
+
+that in future we can use that location to create our Docker images.
+
+exit
+
+cd /opt
+
+ll
+
+
+mkdir docker
+
+ll
+
+chown -R dockeradmin:dockeradmin docker
+
+i am giving ownershipof dockeradmin to docker user
+
+
+ls -ld
+
+cd ..
+
+ll
+
+mv Dockerfile /opt/docker/
+
+
+cd /opt/docker/
+
+ll -l
+
+chown -R dockeradmin:dockeradmin Dockerfile
+
+
+Now go and change jenkins build of BuildAndDeployOnContainer
+
+RemoteDirectory : 
+//opt/docker
+
+[root@dockerhost docker]# ll
+date
+
+vi Dockerfile
+
+we need to artficat to docker file we can use add or copy 
+
+
+FROM tomcat:latest
+RUN cp -R /usr/local/tomcat/webapps.dist/* /usr/local/tomcat/webapps
+COPY ./*.war usr/local/tomcat/webapps
+
+esc :wq
+
+
+cat Dockerfile
+
+.means running docker file and also copying the war file to the location 
+
+
+docker build -t tomcat:v1 .
+
+
+docker run -d --name tomcatv1 -p 8086:8080 tomcat:v1
+
+now we can access application
+
+public ip : 8086/webapp
+
+I'm building my Docker container
+
+manually, but it is not the right choice.
+
+We need to tell to our Jenkins job that once the artifact has been copied, you need to create a Docker
+
+container as well.
+
+
+
+
+Automating the build
+
+
+BuildAndDeployOnContainer
+goto build settings
+
+Exec command
+
+cd /opt/docker;
+docker build -t regapp:v1 .
+docker run -d --name registerapp -p 8087:8080 regapp:v1
+
+save 
+
+
+and goback to docker ssh terminal
+
+
+
+docker images 
+
+docker ps -a
+
+
+docker stop [container id] [container id] [container id] [container id]
+[container id] - all the running container id 
+
+docker ps -a
+
+
+docker container prune
+//it will delete all the container
+
+
+docker images
+
+
+docker images prune -a
+
+
+docker images
+
+
+docker ps -a
+
+
+now go to jenkins and build now
+
+
+ll
+
+docker images
+
+docker ps -a
+
+date
+
+
+now open application in web
+
+
+public ip:8087
+public ip:8087/webapp/
+
+
+goto local helloworld directory and update 
+
+cd hello-world
+cd webapp/src/main/webapp/
+
+
+vi index.jsp
+
+<h1>new user register</h1>
+
+
+git add .
+
+
+git commit -m "updated file in jsp row h1"
+
+git push origin master/main
+
+
+
+build automatically triggered and will fail
+
+
+
+now goto docker ec2 and ssh
+
+pwd
+
+/opt/docker
+
+
+docker build -t regapp:v1 .;
+
+executes successfully
+
+docker run -d --name registerapp -p 8087:8080 regapp:v1
+
+error faces here We have already created a container called Register App is already in use by the containers or so.
+
+And so.
+
+So we cannot create multiple containers with the same name.
+
+That is the problem
+
+
+edit the BuildAndDeployOnContainer
+
+Exec command
+
+cd /opt/docker;
+docker build -t regapp:v1 .;
+docker stop registerapp;
+docker rm registerapp;
+docker run -d --name registerapp -p 8087:8080 regapp:v1
+
+
+apply and save
+
+check ll after buildnow the time
+
+
+docker images
+
+
+docker ps -a
+
+refresh
+
+public ip:8087/webapp/
+
+
+vi index.jsp
+
+add <name>
+
+git commit -am "added jsp" 
+
+git push origin master 
+
+
+We are going to use Ansible as a deployment tool so that Jenkins and not to do the administrative kind
+
+of activities because Jenkins's more efficiently what can build a tool along with the Ansible,
+
+So in this case, Jenkins is going to take the code from GitHub and build artifacts and copy those artifacts
+
+onto Ansible Server.
+
+Now it is Ansible task to create images and to deploy the containers.
+
+Ansible is going to take the artifact and with the help of Docker when it creates a Docker image.
+
+This Docker image, we can commit it into the Docker up because Docker to be the repository to store
+
+Docker images.
+
+Now, whenever we execute any Ansible playbook to deploy a container.
+
+This Docker host communicates with the Docker hub builder.
+
+Image whatever we mentioned in our playbook and create a container out of it.
+
+
+
+Prepare Ansible Server
+• Setup EC2 instance
+• Setup hostname
+• Create ansadmin user
+• Add user to sudoers file
+• Generate ssh keys
+• Enable password based login
+• Install ansibl
+
+
+
+Creating Ansible instance
+
+1)choose linux instance
+2)t2.micro
+3)Tag : Name:Ansible-server
+4)security group : Existing Devops_security_group
+5)keypair : existing devops_project_key
+
+
+to login with mobaxterm needed
+
+1.private key : devops_project_key
+
+2.public ip: 
+
+3.username : ec2-user //iam username 
+
+
+ssh into ansible ec2 instance
+
+sudo su -
+
+vi /etc/hostname
+
+change host name to 
+
+ansible-server
+
+reboot it
+
+init 6 
+
+press R to restart the session
+
+
+sudo su -
+
+useradd ansadmin
+passwd ansadmin
+
+
+visudo
+
+shift + g to goto the end of the file 
+
+go after 
+%wheel and add
+
+i can execute any command without any password
+ansadmin ALL=(ALL)      NOPASSWD: ALL
+
+
+save esc :wq
+
+to enable password based authentication 
+
+vi /etc/ssh/sshd_config
+
+enable PasswordAuthentication yes
+diable PasswordAuthentication no
+
+ 
+
+:wq
+
+service sshd reload
+
+The command service sshd reload is used to reload the SSH server configuration without restarting the SSH service itself.
+
+When you make changes to the SSH server configuration file (typically located at /etc/ssh/sshd_config),
+ you can use the service sshd reload command to apply those changes without interrupting existing SSH connections.
+
+Reloading the SSH server configuration allows you to implement changes such as modifying SSH port settings, 
+enabling or disabling authentication methods, or updating access control rules. 
+The reload command ensures that the new configuration is applied without disrupting any active SSH sessions or connections.
+
+It is important to note that the sshd service must be installed and running on the system for the service sshd reload command to work. 
+Additionally, the specific command may vary depending on the Linux distribution or operating system you are using.
+
+
+now i open another tab in mobxterm to make ssh connection tologin as ansadmin user
+
+and logging with with just
+
+public ip and asks user name password both are ansadmin
+
+and generate sshkey pair
+
+ssh-keygen
+
+You know, whatever server we wish to access, we need to copy this id_rsa.pub that additional public key
+
+onto target system in target system, which location we should copy in the user's home directory, we
+
+
+sudo su -
+
+amazon-linux-extras install ansible2
+
+
+python --version
+
+ansible --version
+
+Next thing is, we need to prepare our Ansible system to create Docker images.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

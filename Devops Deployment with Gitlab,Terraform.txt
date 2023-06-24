@@ -1,0 +1,149 @@
+What is AWS ECS
+ALB
+S3
+EC2
+IAM 
+RDS
+VPC
+Cloudwatch
+Certificate manager
+Terraform
+GitLab-Merge requests , wikis , bug tracking , project management
+Docker
+Django
+
+The application we're deploying is built using Django Reste framework and is designed to run inside
+
+of containers.
+
+We're going to deploy to AWS Cloud, so it will start by setting up an aws account.
+
+These are shared resources between development, staging and production.
+
+This will include an S3 bucket for keeping track of our infrastructure state, a Dynamo DB table for
+
+preventing deployment conflicts and ECR repositories for storing our docker images.
+
+We'll use Gitlab to build our Docker images, push them to ECR and run terraform to create our
+
+environment specific resources.
+
+Next will create a virtual private cloud, or VPC to isolate our development, staging and production
+
+environments from each other.
+
+Some of the resources will require public Internet access to function.
+
+So for these will create a public subnet within our VPC.
+
+Others need to be kept private for security reasons.
+
+Our public subnet will have an AWS Internet gateway which will give it inbound and outbound Internet access.
+
+It will also have a nat gateway which can be used to provide outbound Internet access to our private
+
+subnet using a route table.
+
+Then we'll add our database, which goes into the private subnet, because we want to keep it secure from the
+
+public Internet, we'll use a Bastion server so we can connect to this database to perform administrative
+
+tasks like creating super users.
+
+Next will set up our ECS cluster to run our proxy and API Docky images, which will be pulled from
+
+our ECR repository inside our public subnet,We will have an application load balancer 
+or Alb to handle requests from the user and forward them
+
+to our docker containers that ALB will be responsible for handling https to keep our request secure.
+
+
+We'll use an S3 bucket for storing images uploaded to our API and serving them to users.
+
+Finally, route53 will be used for DNS lookup so we can add a custom domain name for our API.
+
+So that's a high level summary of the infrastructure we'll create in this course in each section.
+
+I'll explain in more depth as we build our architecture.
+
+
+
+
+
+
+
+Install the vsplugin - Docker in VS CODE
+
+Anton Kulikov Terraform VSCODE Plugin 
+
+
+Login to Gitlab
+
+and open local terminal
+
+ssh-keygen -t rsa -b 4096 -C "account email"
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+cat ~/.ssh/id_rsa.pub
+
+go to setting in gitlab and paste it there
+
+
+
+
+creating user and group and policy
+
+first create policy with the MFA so user who login first time with console have to assign MFA so can able to do any action after that only also in command line users
+
+create policy with the custom policy of MFA
+
+then create group with administrative access or access the group need with the policy assigned
+
+next assign the user to the group
+
+
+
+
+
+
+
+adding secret and access key to vault
+
+aws-vault add <accountname>
+secret key:xxxxx
+access key:yyyyyy
+
+added
+
+
+not just console we need to add it in cmd also the MFA
+
+vi ~/.aws/config
+
+
+[profile jonsmith]
+
+region = us-east-1
+mfa_serial = arn:aws:iam::111111111111:mfa/jonsmith
+
+
+
+:wq
+
+
+aws-vault exec sugumar --duration=12 -- cmd.exe
+
+the credentials stored for 12 hours default is one hours
+
+now it will ask the token MFA
+
+and now have to enter password for the vault 
+
+Hi Good Afternoon
+
+I hope you have received my resume for the web development role.
+
+I am currently working on the Philips project, which will conclude on June 30th.
+
+I wanted to follow up with you regarding the status of the process.
+
